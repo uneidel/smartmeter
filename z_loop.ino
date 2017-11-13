@@ -1,21 +1,36 @@
 #define KITKAT (1000UL * 60)
-#define WEATHER (1000UL *60 *60)  // 1 Hour
+#define DISABLE_LED (1000UL *60 *30)  // 30 Min
 
 unsigned long rolltime = millis() + KITKAT;
-unsigned long rollTemptime = millis() + KITKAT;
+unsigned long ROLLDISABLELED = millis() + DISABLE_LED;
 
 void loop() {
 
   button.tick();
-  if (dirty){ tft.fillScreen(TFT_BLACK); }
+
   switch (currentdisplay){
     case 0:
-      ShowTimeAndTemp();
-      break;
+        DisableLED();
+        dirty = false;
+        break;
     case 1:
-       ShowLinearGaugeTemp();
+      EnableLED();
+      ROLLDISABLELED += DISABLE_LED;
+      ShowTimeAndTemp();
+      dirty = false;
+      break;
     case 2:
+       EnableLED();
+       ShowLinearGaugeTemp();
+       ROLLDISABLELED += DISABLE_LED;
+       dirty = false;
+       break;
+    case 3:
+        EnableLED();
        ShowLinearGaugeMemory();
+       ROLLDISABLELED += DISABLE_LED;
+       dirty = false;
+       break;
   }
   
   pubsubclient.loop();
@@ -23,16 +38,23 @@ void loop() {
   
   if (firmwareupdate){ httpServer.handleClient();}
 
-
-  
-  
-  
- 
+  if((long)(millis() - ROLLDISABLELED) >= 0 || currentdisplay != 0) {
+     DisableLED();
+  }
 }
 
+void DisableLED(){
+   pinMode(D3,OUTPUT);
+   digitalWrite(D3,0);
+}
+void EnableLED(){
+  pinMode(D3,OUTPUT);
+  digitalWrite(D3,1);
+}
 void ShowLinearGaugeTemp(){
   if((long)(millis() - rolltime) >= 0 || dirty == true) {
      rolltime += KITKAT;
+     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.setFreeFont(FF24);         
     tft.drawString("Temperature", 10, 0, GFXFF);
@@ -40,12 +62,13 @@ void ShowLinearGaugeTemp(){
     plotLinear("Swarm2", 90, 80, Clustertemp[1]);
     plotLinear("Swarm3", 160, 80, Clustertemp[2]);
     plotLinear("Swarm4", 230, 80, Clustertemp[3]);
-    dirty = false;
+    
   }
 }
 void ShowLinearGaugeMemory(){
   if((long)(millis() - rolltime) >= 0 || dirty == true) {
      rolltime += KITKAT;
+     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_ORANGE, TFT_BLACK);
     tft.setFreeFont(FF24);         
     tft.drawString("Memory           ", 10, 0, GFXFF);
@@ -53,12 +76,13 @@ void ShowLinearGaugeMemory(){
     plotLinear("Swarm2", 90, 80, Clustertemp[5]);
     plotLinear("Swarm3", 160, 80, Clustertemp[6]);
     plotLinear("Swarm4", 230, 80, Clustertemp[7]);
-    dirty = false;
+    
   }
 }
 void ShowTimeAndTemp(){
   if((long)(millis() - rolltime) >= 0 || dirty == true) {
      rolltime += KITKAT;
+     tft.fillScreen(TFT_BLACK);
      String s = GetCurrentTime(true);
      s = s.substring(0, s.indexOf(" "));
      s = s.substring(0, s.lastIndexOf(":"));
@@ -68,9 +92,7 @@ void ShowTimeAndTemp(){
     tft.drawString(s, 150, 50, GFXFF);//
     ui.drawBmp(CurrentWeather.FileName, 200, 100);
     tft.drawString(CurrentWeather.temperature, 50, 200);
-    //tft.setFreeFont(FF7);
-    //tft.drawString(CurrentWeather.prop, 50, 200);
-    dirty = false;
+    
  }
 }
 void PublishMessage(char* message)

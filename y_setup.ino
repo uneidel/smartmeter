@@ -32,8 +32,7 @@ void setup() {
   PubSubConnect();
 
    downloadResources();
-  //pinMode(D3,OUTPUT);
-  //digitalWrite(D3,0);
+ 
 }
 void PubSubConnect() {
   while (!pubsubclient.connected()) {
